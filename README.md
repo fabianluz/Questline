@@ -23,8 +23,24 @@ GPU. If Questline ever makes a network call to anything other than
 
 ---
 
+## Screenshots
+
+> Trails-in-the-Sky / FFX-styled UI, shown with demo data.
+
+|  |  |
+|:--:|:--:|
+| **Dashboard** — today's quests + next-up hub | **Skill Tree** — every milestone, auto-laid-out |
+| [![Dashboard](docs/screenshots/dashboard.png)](docs/screenshots/dashboard.png) | [![Skill Tree](docs/screenshots/skill-tree.png)](docs/screenshots/skill-tree.png) |
+| **Chapter Board** — plan the *order* you tackle goals | **Roadmap** — start→end bars, parallel tracks, capacity |
+| [![Chapter Board](docs/screenshots/chapter-board.png)](docs/screenshots/chapter-board.png) | [![Roadmap](docs/screenshots/roadmap.png)](docs/screenshots/roadmap.png) |
+| **Daily Quests** — habits with streaks + XP | **Inventory** — RPG-flavored finances |
+| [![Daily Quests](docs/screenshots/quests.png)](docs/screenshots/quests.png) | [![Inventory](docs/screenshots/inventory.png)](docs/screenshots/inventory.png) |
+
+---
+
 ## Table of contents
 
+- [Screenshots](#screenshots)
 - [Why Questline](#why-questline)
 - [Feature tour](#feature-tour)
 - [The local AI](#the-local-ai)
