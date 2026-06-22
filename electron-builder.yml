@@ -1,0 +1,40 @@
+appId: com.questline.app
+productName: Questline
+copyright: © 2026
+
+directories:
+  output: dist-app
+  buildResources: build
+
+# Only the Electron shell goes inside the app.asar. The whole Next.js server
+# (with its traced node_modules + the embedded PGlite engine) and the DB
+# migrations ship as plain files under Resources/, because the shell forks
+# server.js as a real file (you can't fork from inside an asar).
+files:
+  - electron/**
+  - package.json
+
+# The DB migrations copy cleanly via extraResources. The Next standalone server
+# (which contains `.next` + node_modules) is copied in `afterPack` instead,
+# because electron-builder's matcher strips dot-dirs and prunes node_modules.
+extraResources:
+  - from: drizzle
+    to: drizzle
+
+afterPack: ./electron/after-pack.js
+
+asar: true
+
+mac:
+  category: public.app-category.productivity
+  icon: build/icon.icns
+  target:
+    - target: dmg
+      arch:
+        - arm64
+  # Personal/local build: ad-hoc (unsigned). Remove this to sign with a real
+  # Developer ID certificate for distribution to others.
+  identity: null
+
+dmg:
+  title: Questline

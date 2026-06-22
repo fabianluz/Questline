@@ -1,0 +1,473 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   Trails-in-the-Sky / Final Fantasy X palette.
+
+   Cool royal-blue translucent menus on a deep-navy starfield background,
+   with cyan trim, soft gold accents, cream-white text. Designed for
+   maximum readability — no scanlines, no patterned overlays. The "JRPG
+   feel" comes from frame ornament + color palette + Cinzel headings, not
+   from texture noise.
+   ========================================================================== */
+
+:root {
+  /* Background field — deep navy with a hint of indigo */
+  --trails-bg: #0c1633;
+  --trails-bg-deep: #07102a;
+  --trails-bg-glow: #1a2a55;
+
+  /* Translucent menu panel — what every card sits on */
+  --trails-panel: #1e3a72;
+  --trails-panel-dark: #122657;
+  --trails-panel-edge: #4d7dd5;
+
+  /* Trim — thin cyan lines on the outside of panels */
+  --trails-trim: #6fb5ff;
+  --trails-trim-soft: #4f8fd9;
+
+  /* Accent — gold for "selected" / "important" */
+  --trails-accent: #f7d76e;
+  --trails-accent-bright: #ffe9a3;
+  --trails-accent-dim: #b89a3a;
+
+  /* Status semantics */
+  --trails-good: #6ee7b7; /* mint */
+  --trails-warn: #ffc266; /* amber */
+  --trails-bad: #ff6b8a;  /* soft crimson */
+  --trails-info: #93c5fd; /* sky */
+
+  /* Text */
+  --trails-fg: #f4f1e6;       /* cream */
+  --trails-fg-dim: #a9b8d8;   /* steel */
+  --trails-fg-muted: #6c7a99;
+
+  --background: var(--trails-bg);
+  --foreground: var(--trails-fg);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-trails-bg: var(--trails-bg);
+  --color-trails-bg-deep: var(--trails-bg-deep);
+  --color-trails-bg-glow: var(--trails-bg-glow);
+  --color-trails-panel: var(--trails-panel);
+  --color-trails-panel-dark: var(--trails-panel-dark);
+  --color-trails-panel-edge: var(--trails-panel-edge);
+  --color-trails-trim: var(--trails-trim);
+  --color-trails-trim-soft: var(--trails-trim-soft);
+  --color-trails-accent: var(--trails-accent);
+  --color-trails-accent-bright: var(--trails-accent-bright);
+  --color-trails-accent-dim: var(--trails-accent-dim);
+  --color-trails-good: var(--trails-good);
+  --color-trails-warn: var(--trails-warn);
+  --color-trails-bad: var(--trails-bad);
+  --color-trails-info: var(--trails-info);
+  --color-trails-fg: var(--trails-fg);
+  --color-trails-fg-dim: var(--trails-fg-dim);
+  --color-trails-fg-muted: var(--trails-fg-muted);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-cinzel);
+  --font-pixel: var(--font-cinzel); /* legacy alias — no pixel font anymore */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New",
+    monospace;
+
+  /* Legacy "jrpg-*" color aliases so older components keep rendering against
+     the new Trails palette without per-file refactors. */
+  --color-jrpg-bg: var(--trails-bg);
+  --color-jrpg-bg-deep: var(--trails-bg-deep);
+  --color-jrpg-fg: var(--trails-fg);
+  --color-jrpg-muted: var(--trails-fg-dim);
+  --color-jrpg-gold: var(--trails-accent);
+  --color-jrpg-gold-bright: var(--trails-accent-bright);
+  --color-jrpg-gold-dim: var(--trails-accent-dim);
+  --color-jrpg-violet: var(--trails-panel);
+  --color-jrpg-indigo: var(--trails-panel-dark);
+  --color-jrpg-crimson: var(--trails-bad);
+  --color-jrpg-ember: var(--trails-warn);
+  --color-jrpg-emerald: var(--trails-good);
+  --color-jrpg-amber: var(--trails-warn);
+  --color-jrpg-azure: var(--trails-info);
+}
+
+/* Map .font-pixel (formerly Press Start 2P) onto Cinzel so any old chips
+   stay readable. */
+.font-pixel {
+  font-family: var(--font-cinzel), serif;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* ===========================================================================
+   Body — starfield background + cream type
+   ========================================================================== */
+
+body {
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 50% -10%,
+      color-mix(in oklab, var(--trails-bg-glow) 65%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      circle 800px at 85% 110%,
+      color-mix(in oklab, var(--trails-panel) 40%, transparent),
+      transparent 60%
+    ),
+    var(--trails-bg);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-cinzel), Georgia, serif;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--trails-accent-bright);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+
+h1 { font-size: 1.75rem; line-height: 1.2; }
+h2 { font-size: 1.05rem; line-height: 1.3; }
+h3 { font-size: 0.95rem; line-height: 1.3; }
+
+code, pre, .font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Selection highlight matches the palette */
+::selection {
+  background: color-mix(in oklab, var(--trails-accent) 70%, transparent);
+  color: var(--trails-bg-deep);
+}
+
+/* ===========================================================================
+   Cascading panel treatment.
+
+   Every existing `rounded-lg border` and `rounded-md border` in the app
+   becomes a Trails/FFX menu panel: cyan-trimmed translucent royal-blue
+   gradient over the starfield. No JSX refactor required.
+
+   The selector uses `:where()` to keep specificity low so per-component
+   overrides remain trivial.
+   ========================================================================== */
+
+:where(.rounded-lg.border, .rounded-md.border) {
+  border-color: var(--trails-trim) !important;
+  border-width: 1.5px !important;
+  border-radius: 6px !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--trails-panel) 80%, white 6%) 0%,
+    color-mix(in oklab, var(--trails-panel-dark) 95%, black 5%) 100%
+  ) !important;
+  background-color: var(--trails-panel-dark) !important;
+  color: var(--trails-fg) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--trails-trim) 30%, transparent),
+    inset 0 1px 0 color-mix(in oklab, white 12%, transparent),
+    0 6px 20px -8px rgba(0, 0, 0, 0.55) !important;
+  position: relative;
+}
+
+/* Subtle outer cyan halo on panels for the menu-floating feel */
+:where(.rounded-lg.border)::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 7px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--trails-trim) 18%, transparent),
+    transparent
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Headings inside a panel get a tidy underline like FFX menu separators */
+:where(.rounded-lg.border, .rounded-md.border) h2 {
+  border-bottom: 1px solid color-mix(in oklab, var(--trails-trim) 50%, transparent);
+  padding-bottom: 0.35em;
+  margin-bottom: 0.5em;
+}
+
+/* Body text inside panels stays cream */
+:where(.rounded-lg.border, .rounded-md.border) p,
+:where(.rounded-lg.border, .rounded-md.border) span,
+:where(.rounded-lg.border, .rounded-md.border) li,
+:where(.rounded-lg.border, .rounded-md.border) dd,
+:where(.rounded-lg.border, .rounded-md.border) dt,
+:where(.rounded-lg.border, .rounded-md.border) label {
+  color: var(--trails-fg);
+}
+
+/* Override Tailwind's text-zinc-* (every shade) to our palette so any
+   library / component that uses Tailwind's default gray scale stays
+   readable on the dark Trails panels. */
+:where(.text-zinc-400, .text-zinc-500, .text-zinc-600) {
+  color: var(--trails-fg-dim) !important;
+}
+:where(.text-zinc-700, .text-zinc-800, .text-zinc-900) {
+  color: var(--trails-fg) !important;
+}
+:where(.text-zinc-300, .text-zinc-200, .text-zinc-100) {
+  color: var(--trails-fg) !important;
+}
+
+/* ===========================================================================
+   Buttons — gold-trimmed royal-blue menu buttons.
+
+   We catch the "primary action" pattern (bg-zinc-900 + white text) and
+   re-skin it without breaking existing JSX.
+   ========================================================================== */
+
+button.bg-zinc-900,
+a.bg-zinc-900 {
+  background: linear-gradient(
+    180deg,
+    var(--trails-accent) 0%,
+    var(--trails-accent-dim) 100%
+  ) !important;
+  border: 1.5px solid color-mix(in oklab, var(--trails-accent) 60%, black 40%) !important;
+  color: var(--trails-bg-deep) !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  font-family: var(--font-cinzel), serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  font-size: 0.78rem !important;
+  border-radius: 4px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 2px 0 rgba(0, 0, 0, 0.3) !important;
+  transition: transform 80ms, box-shadow 80ms;
+}
+button.bg-zinc-900:hover,
+a.bg-zinc-900:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 3px 0 rgba(0, 0, 0, 0.35) !important;
+}
+button.bg-zinc-900:active,
+a.bg-zinc-900:active {
+  transform: translateY(1px);
+}
+button.bg-zinc-900:disabled {
+  opacity: 0.55;
+}
+
+/* Secondary / ghost button (the "border border-zinc-200" pattern) */
+button.border.border-zinc-200,
+a.border.border-zinc-200 {
+  background: var(--trails-panel-dark) !important;
+  border-color: var(--trails-trim-soft) !important;
+  color: var(--trails-fg) !important;
+}
+button.border.border-zinc-200:hover,
+a.border.border-zinc-200:hover {
+  background: var(--trails-panel) !important;
+  border-color: var(--trails-trim) !important;
+  color: var(--trails-accent-bright) !important;
+}
+
+/* ===========================================================================
+   Form controls
+   ========================================================================== */
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+textarea,
+select {
+  background: var(--trails-panel-dark) !important;
+  color: var(--trails-fg) !important;
+  border: 1.5px solid var(--trails-trim-soft) !important;
+  border-radius: 4px !important;
+}
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--trails-accent) !important;
+  outline-offset: 1px;
+  border-color: var(--trails-accent) !important;
+}
+input::placeholder, textarea::placeholder {
+  color: var(--trails-fg-muted) !important;
+}
+
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--trails-accent);
+}
+
+/* ===========================================================================
+   Custom JRPG panel (only used by modals — leave as a separate utility)
+   ========================================================================== */
+
+.jrpg-panel {
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--trails-panel) 90%, white 6%) 0%,
+    var(--trails-panel-dark) 100%
+  );
+  border: 2px solid var(--trails-trim);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--trails-trim) 35%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 36px -10px rgba(0, 0, 0, 0.75);
+  color: var(--trails-fg);
+}
+
+/* Diamond corner cuts on JRPG panels */
+.jrpg-panel::before,
+.jrpg-panel::after {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: var(--trails-accent);
+  transform: rotate(45deg);
+  pointer-events: none;
+  box-shadow: 0 0 6px var(--trails-accent);
+}
+.jrpg-panel::before { top: -4px; left: -4px; }
+.jrpg-panel::after { bottom: -4px; right: -4px; }
+
+/* ===========================================================================
+   Pure-CSS JRPG button class (used by modals — opt-in, not cascading)
+   ========================================================================== */
+
+.jrpg-btn {
+  font-family: var(--font-cinzel), serif;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  padding: 0.45em 1em;
+  border-radius: 4px;
+  border: 1.5px solid color-mix(in oklab, var(--trails-accent) 65%, black 35%);
+  background: linear-gradient(
+    180deg,
+    var(--trails-accent) 0%,
+    var(--trails-accent-dim) 100%
+  );
+  color: var(--trails-bg-deep);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 0 rgba(0, 0, 0, 0.3);
+  transition: transform 80ms, box-shadow 80ms;
+}
+.jrpg-btn:hover {
+  transform: translateY(-1px);
+}
+.jrpg-btn:active {
+  transform: translateY(1px);
+}
+.jrpg-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.jrpg-btn--ghost {
+  background: var(--trails-panel-dark);
+  color: var(--trails-fg);
+  border-color: var(--trails-trim-soft);
+  text-shadow: none;
+}
+.jrpg-btn--ghost:hover {
+  background: var(--trails-panel);
+  color: var(--trails-accent-bright);
+  border-color: var(--trails-trim);
+}
+
+.jrpg-btn--danger {
+  background: linear-gradient(
+    180deg,
+    var(--trails-bad) 0%,
+    color-mix(in oklab, var(--trails-bad) 50%, black 50%) 100%
+  );
+  border-color: color-mix(in oklab, var(--trails-bad) 60%, black 40%);
+  color: var(--trails-fg);
+}
+
+/* ===========================================================================
+   §6 — Urgency status effects on skill-tree nodes (kept; pure visual)
+   ========================================================================== */
+
+@keyframes urgency-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 138, 0); }
+  50%      { box-shadow: 0 0 0 8px rgba(255, 107, 138, 0.45); }
+}
+@keyframes urgency-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 194, 102, 0); }
+  50%      { box-shadow: 0 0 0 6px rgba(255, 194, 102, 0.45); }
+}
+@keyframes victory-shine {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(110, 231, 183, 0); }
+  50%      { box-shadow: 0 0 0 5px rgba(110, 231, 183, 0.45); }
+}
+
+.urgency-imminent {
+  animation: urgency-glow 2.6s ease-in-out infinite;
+  border-color: var(--trails-warn) !important;
+}
+.urgency-burning {
+  animation: urgency-pulse 1.4s ease-in-out infinite;
+  border-color: var(--trails-bad) !important;
+}
+.urgency-fractured {
+  border-color: var(--trails-bad) !important;
+  border-style: dashed !important;
+}
+.urgency-victory {
+  border-color: var(--trails-good) !important;
+  animation: victory-shine 3s ease-in-out infinite;
+}
+
+/* ===========================================================================
+   §7 — Accessibility pass
+   - Visible keyboard focus ring on every interactive element (mouse clicks
+     don't trigger :focus-visible, so this is keyboard-only and unobtrusive).
+   - Respect prefers-reduced-motion: drop the infinite urgency animations and
+     collapse transitions/animations for users who ask for less motion.
+   ========================================================================== */
+
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[tabindex]:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--trails-accent) !important;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Keep the urgency state legible without the pulse — fall back to a static
+     ring so the at-risk cue survives. */
+  .urgency-imminent { box-shadow: 0 0 0 3px rgba(255, 194, 102, 0.4) !important; }
+  .urgency-burning { box-shadow: 0 0 0 3px rgba(255, 107, 138, 0.45) !important; }
+  .urgency-victory { box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.4) !important; }
+}

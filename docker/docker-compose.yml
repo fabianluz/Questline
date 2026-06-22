@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: questline-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: questline
+      POSTGRES_USER: questline
+      POSTGRES_PASSWORD: questline_dev_only
+    ports:
+      - "5432:5432"
+    volumes:
+      - questline-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U questline -d questline"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  questline-pgdata:

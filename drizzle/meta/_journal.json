@@ -1,0 +1,167 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1780054425714,
+      "tag": "0000_mighty_blazing_skull",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780241641189,
+      "tag": "0001_add_milestone_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780243485590,
+      "tag": "0002_add_quests",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780299252301,
+      "tag": "0003_add_inventory",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780300326570,
+      "tag": "0004_add_calendar_feed",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780506859577,
+      "tag": "0005_add_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780525609597,
+      "tag": "0006_add_phase5_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780527278128,
+      "tag": "0007_drop_health_event",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780555932330,
+      "tag": "0008_drop_debuff_and_complexity",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1780557340366,
+      "tag": "0009_drop_save_point_extras",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780743353668,
+      "tag": "0010_add_chapter_board",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1780755196636,
+      "tag": "0011_add_deadlines",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1780759146337,
+      "tag": "0012_add_skill_tree",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780785331238,
+      "tag": "0013_famous_mandarin",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1780786543229,
+      "tag": "0014_smooth_zombie",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1781032514112,
+      "tag": "0015_neat_layla_miller",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1781034168285,
+      "tag": "0016_safe_living_mummy",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1782002901057,
+      "tag": "0017_soft_sentry",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1782042462346,
+      "tag": "0018_careful_xavin",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1782066623153,
+      "tag": "0019_clumsy_domino",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1782067898107,
+      "tag": "0020_dark_paladin",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1782075730556,
+      "tag": "0021_unique_gorgon",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1782102660231,
+      "tag": "0022_keen_molten_man",
+      "breakpoints": true
+    }
+  ]
+}
