@@ -12,8 +12,9 @@ const fs = require("node:fs");
 const os = require("node:os");
 const crypto = require("node:crypto");
 const net = require("node:net");
-const { fork } = require("node:child_process");
+const { fork, spawn } = require("node:child_process");
 const ollama = require("./ollama-manager");
+const whisper = require("./whisper-manager");
 
 // Endpoint the forked Next server (lib/ollama) should talk to. Resolved at boot:
 // the user's own Ollama on :11434 if present, else our managed engine on :11435.
@@ -52,6 +53,52 @@ ipcMain.handle("questline:reveal-path", (_e, p) => {
   if (typeof p === "string" && p) shell.showItemInFolder(p);
   return { ok: true };
 });
+
+// ── Voice: text-to-speech via macOS `say` (Phase 6) ─────────────────────────
+// Built-in, offline, no bundling. One process at a time; text is piped on stdin
+// to dodge arg-length/quoting limits (ported from Arcadia's tts.rs).
+let sayChild = null;
+function stopSpeaking() {
+  if (sayChild) {
+    try {
+      sayChild.kill();
+    } catch {
+      /* ignore */
+    }
+    sayChild = null;
+  }
+}
+ipcMain.handle("questline:speak", (_e, { text, voice, rate }) => {
+  stopSpeaking();
+  const t = String(text ?? "").trim();
+  if (!t) return { speaking: false };
+  const args = [];
+  if (voice) args.push("-v", String(voice));
+  if (rate) args.push("-r", String(rate));
+  sayChild = spawn("/usr/bin/say", args, { stdio: ["pipe", "ignore", "ignore"] });
+  sayChild.on("exit", () => {
+    sayChild = null;
+  });
+  sayChild.stdin.write(t);
+  sayChild.stdin.end(); // EOF → say starts speaking
+  return { speaking: true };
+});
+ipcMain.handle("questline:stop-speaking", () => {
+  stopSpeaking();
+  return { speaking: false };
+});
+
+// ── Voice: local speech-to-text via whisper.cpp (Phase 6) ───────────────────
+ipcMain.handle("questline:whisper-status", () => whisper.status(app.getPath("userData")));
+ipcMain.handle("questline:whisper-install-model", async () => {
+  await whisper.installModel(app.getPath("userData"), (p) => {
+    mainWindow?.webContents.send("questline:whisper-progress", p);
+  });
+  return { installed: true };
+});
+ipcMain.handle("questline:transcribe", async (_e, { wav, lang }) =>
+  whisper.transcribe(app.getPath("userData"), wav, lang),
+);
 
 const isDev = !app.isPackaged;
 let serverProcess = null;
@@ -245,6 +292,7 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   isQuitting = true;
+  stopSpeaking(); // don't leave a `say` process talking after quit
   if (serverProcess) {
     try {
       serverProcess.kill();

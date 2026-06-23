@@ -166,6 +166,9 @@ export const modelsRouter = router({
   /** Catalog ⨉ engine truth: installed + available models, with fit warnings. */
   list: protectedProcedure.query(async ({ ctx }) => {
     const total = os.totalmem();
+    // Chip brand (e.g. "Apple M3 Pro") powers the pre-run tokens/sec estimate
+    // in the Model Manager (see lib/hw-perf.ts). Null on non-Apple/unknown.
+    const chip = os.cpus()[0]?.model ?? null;
     const active = getActiveModel();
 
     let tags: { name: string; size?: number; digest?: string }[] = [];
@@ -257,6 +260,7 @@ export const modelsRouter = router({
       error,
       host: HOST,
       totalMemoryBytes: total,
+      chip,
       active,
       models: [...byRef.values()].sort(sortModels),
       installedCount: tags.length,
@@ -330,12 +334,13 @@ export const modelsRouter = router({
   surfacePrefs: protectedProcedure.query(async ({ ctx }) => {
     const pref = await ctx.db.query.userPreference.findFirst({
       where: eq(userPreference.userId, ctx.user.id),
-      columns: { surfaceModels: true, autoRouteModels: true },
+      columns: { surfaceModels: true, autoRouteModels: true, houseStyle: true },
     });
     return {
       surfaces: SURFACE_LIST,
       overrides: pref?.surfaceModels ?? {},
       autoRoute: pref?.autoRouteModels ?? false,
+      houseStyle: pref?.houseStyle ?? "",
       resolved: await resolveAllSurfaces(ctx.user.id),
     };
   }),
@@ -389,6 +394,21 @@ export const modelsRouter = router({
           set: { autoRouteModels: input.enabled, updatedAt: new Date() },
         });
       return { autoRoute: input.enabled };
+    }),
+
+  /** Set (or clear) the free-text house style appended to every AI persona. */
+  setHouseStyle: protectedProcedure
+    .input(z.object({ houseStyle: z.string().max(2000) }))
+    .mutation(async ({ ctx, input }) => {
+      const value = input.houseStyle.trim() || null;
+      await ctx.db
+        .insert(userPreference)
+        .values({ userId: ctx.user.id, houseStyle: value })
+        .onConflictDoUpdate({
+          target: userPreference.userId,
+          set: { houseStyle: value, updatedAt: new Date() },
+        });
+      return { houseStyle: value ?? "" };
     }),
 });
 

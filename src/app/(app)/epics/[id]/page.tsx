@@ -27,6 +27,7 @@ import { EntityExportButton } from "@/components/entity-io-controls";
 import { DeadlineEditor } from "@/components/deadline-editor";
 import { startFocus } from "@/components/focus-timer";
 import { ProgressRing } from "@/components/progress-ring";
+import { RichText } from "@/components/rich-text";
 
 type AIProvenance = {
   source: "ai_guide";
@@ -193,9 +194,10 @@ export default function EpicDetailPage() {
               <span className="truncate">{epic.title}</span>
             </h1>
             {epic.description && (
-              <p className="mt-1 text-sm text-trails-fg-dim">
-                {epic.description}
-              </p>
+              <RichText
+                text={epic.description}
+                className="mt-1 text-sm text-trails-fg-dim"
+              />
             )}
             <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-trails-fg-dim">
               {epic.category && <span>{epic.category.name}</span>}

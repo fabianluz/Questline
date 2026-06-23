@@ -17,6 +17,7 @@ import type {
 } from "@/lib/advisor-types";
 import { cn } from "@/lib/utils";
 import { tokensPerSecond } from "@/lib/model-routing";
+import { RichText } from "@/components/rich-text";
 
 type RunStats = {
   model: string;
@@ -350,9 +351,10 @@ export function AIGuideModal({
                       )}
                     </div>
                     {p.description && (
-                      <p className="mt-1 text-xs text-zinc-500">
-                        {p.description}
-                      </p>
+                      <RichText
+                        text={p.description}
+                        className="mt-1 text-xs text-zinc-500"
+                      />
                     )}
                   </div>
                 </li>

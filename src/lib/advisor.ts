@@ -25,6 +25,19 @@ import { extractJson } from "./extract-json";
 import { numCtxForPrompt } from "./context-window";
 import { resolveWindow } from "./schedule";
 import type { AdvisorEvent, MilestoneProposal } from "./advisor-types";
+import { composeSystemPrompt } from "./personas";
+import { getHouseStyle } from "@/server/ai-context";
+import type { ModelSurface } from "./model-routing";
+
+/**
+ * Build a surface's system prompt: the per-surface persona + this call's
+ * task-specific rules + the player's request-scoped house style (set by
+ * runForSurface). Centralizes what used to be a dozen ad-hoc "You are 'The
+ * Guide'…" strings. `task` carries only the rules unique to the call.
+ */
+function systemFor(surface: ModelSurface, task?: string): string {
+  return composeSystemPrompt(surface, task, getHouseStyle());
+}
 
 export type { MilestoneProposal } from "./advisor-types";
 
@@ -210,9 +223,7 @@ export type BreakDownEpicResult = {
 
 // Kept short and explicit — small local models follow tight instructions
 // better than open-ended ones.
-const ADVISOR_SYSTEM_PROMPT = `You are "The Guide" — an in-game advisor in a JRPG-styled life-management app.
-
-The user organizes life goals as:
+const ADVISOR_BREAKDOWN_TASK = `The user organizes life goals as:
 - Epic: long-term priority (e.g. "Master Japanese", spans months)
 - Milestone: a checkpoint inside an Epic (e.g. "Pass N5 Level")
 - Tier: integer 0,1,2... Same tier = parallel work, higher tier = later in the journey
@@ -309,7 +320,7 @@ ${existingMd}
 Propose 3-5 NEW milestones (at tier ${nextSuggestedTier(target.milestones)}+) to extend this Epic.`;
 
   const messages: Message[] = [
-    { role: "system", content: ADVISOR_SYSTEM_PROMPT },
+    { role: "system", content: systemFor("breakdown", ADVISOR_BREAKDOWN_TASK) },
     { role: "user", content: userMessage },
   ];
 
@@ -451,7 +462,7 @@ ${existingMd}
 Propose 3-5 NEW milestones (at tier ${nextSuggestedTier(target.milestones)}+) to extend this Epic.`;
 
   const messages: Message[] = [
-    { role: "system", content: ADVISOR_SYSTEM_PROMPT },
+    { role: "system", content: systemFor("breakdown", ADVISOR_BREAKDOWN_TASK) },
     { role: "user", content: userMessage },
   ];
 
@@ -680,8 +691,10 @@ Only call the tool for milestones that genuinely need rescheduling. Skip items t
   const messages: Message[] = [
     {
       role: "system",
-      content:
-        "You are 'The Guide', a JRPG-styled life advisor. Help the user pace their roadmap realistically.",
+      content: systemFor(
+        "planning",
+        "Help the user pace their roadmap realistically by rescheduling milestones via the tool.",
+      ),
     },
     { role: "user", content: userMessage },
   ];
@@ -789,8 +802,10 @@ ${existing || "(none)"}`;
   const messages: Message[] = [
     {
       role: "system",
-      content:
-        "You are 'The Guide'. Recommend concrete resources by calling recommend_resource once per recommendation.",
+      content: systemFor(
+        "planning",
+        "Recommend concrete resources by calling recommend_resource once per recommendation.",
+      ),
     },
     { role: "user", content: userMessage },
   ];
@@ -905,8 +920,10 @@ ${ctx}`;
   const messages: Message[] = [
     {
       role: "system",
-      content:
-        "You are 'The Guide'. Generate small, motivating one-off side quests via the propose_side_quest tool.",
+      content: systemFor(
+        "planning",
+        "Generate small, motivating one-off side quests via the propose_side_quest tool.",
+      ),
     },
     { role: "user", content: userMessage },
   ];
@@ -993,8 +1010,7 @@ NEXT_WEEK_FOCUS:
       messages: [
         {
           role: "system",
-          content:
-            "You are 'The Guide'. Speak warmly and concretely; no platitudes. Output plain text only — no markdown bold or headings.",
+          content: systemFor("coach"),
         },
         { role: "user", content: userMessage },
       ],
@@ -1132,8 +1148,7 @@ or markdown. Do NOT add any text before PRIORITIES or after the encouragement.`;
       messages: [
         {
           role: "system",
-          content:
-            "You are 'The Guide', a wise JRPG mentor. Be concrete and brief; no platitudes. Reference the user's actual epics and milestones by name. Output plain text only — never markdown bold, italics, or headings.",
+          content: systemFor("coach"),
         },
         { role: "user", content: userMessage },
       ],
@@ -1341,8 +1356,10 @@ Return ONLY JSON: {"blocks":[{"start":"HH:MM","end":"HH:MM","title":"...","kind"
       messages: [
         {
           role: "system",
-          content:
-            "You are a precise daily-schedule planner. Output strict JSON only. Never move FIXED blocks. Never create overlaps.",
+          content: systemFor(
+            "planning",
+            "Act as a precise daily-schedule planner. Output strict JSON only. Never move FIXED blocks. Never create overlaps.",
+          ),
         },
         { role: "user", content: userMessage },
       ],
@@ -1416,8 +1433,10 @@ Be specific and reference the blocks/tasks by name. Warm, honest, no platitudes.
       messages: [
         {
           role: "system",
-          content:
-            "You are 'The Guide', a wise, concrete journaling companion. Output GitHub-flavored markdown only.",
+          content: systemFor(
+            "planning",
+            "Act as a concrete journaling companion. Output GitHub-flavored Markdown only.",
+          ),
         },
         { role: "user", content: userMessage },
       ],
@@ -1454,10 +1473,13 @@ export async function chatWithGuideStream(
     context = "(no roadmap data available)";
   }
 
-  const system = `You are "The Guide", the user's personal strategist inside Questline — a local, gamified life-management app. Answer using ONLY the user's actual data provided below. Be concrete and concise; reference their real Epics, Milestones, Quests and finances by name. When asked what to focus on, prioritize overdue and imminent items, and respect dependencies. If the data doesn't contain an answer, say so plainly rather than inventing it.
+  const system = systemFor(
+    "chat",
+    `When asked what to focus on, prioritize overdue and imminent items, and respect dependencies.
 
 === USER ROADMAP CONTEXT ===
-${context}`;
+${context}`,
+  );
 
   const started = Date.now();
   try {
@@ -1631,9 +1653,12 @@ async function runPromptStream(
     const stream = await ollama.chat({
       model: getActiveModel(),
       messages: [
-        // No system prompt — the user prompt itself sets the rules.
-        // The structured prompts are explicit enough that a separate
-        // system message would just add noise.
+        // No system prompt — the user prompt itself sets the rules. The
+        // structured prompts are explicit enough that a separate system
+        // message would just add noise. The "import" surface persona and the
+        // house-style override are DELIBERATELY not applied here: a free-text
+        // style like "answer in Spanish" would corrupt the strict JSON these
+        // steps must emit (and these match the documented external-LLM flow).
         { role: "user", content: fullPrompt },
       ],
       stream: true,
@@ -1749,9 +1774,7 @@ const planChaptersJsonSchema = z.object({
     .min(1),
 });
 
-const PLAN_QUESTION_SYSTEM_PROMPT = `You are "The Guide" in a JRPG-styled life-management app.
-
-Before laying out the user's CHAPTER BOARD, ask 3-5 SHORT, high-signal clarifying questions whose answers will materially change how you sequence their goals. Good topics: their single top priority right now, preferred pace (deep focus on one thing vs. parallel progress), hard deadlines, weekly time budget, and how many chapters (phases) they want.
+const PLAN_QUESTION_TASK = `Before laying out the user's CHAPTER BOARD, ask 3-5 SHORT, high-signal clarifying questions whose answers will materially change how you sequence their goals. Good topics: their single top priority right now, preferred pace (deep focus on one thing vs. parallel progress), hard deadlines, weekly time budget, and how many chapters (phases) they want.
 
 Keep each question concrete and quick to answer; offer choices when natural. Write questions in plain language about the user's goals — NEVER mention the internal item codes (E1, M2, Q3, …) in the question text or choices. Do NOT propose any plan yet — questions only.
 
@@ -1759,9 +1782,7 @@ Return ONE JSON object, no prose, no markdown fences:
 { "questions": [ { "text": "…?", "kind": "free" }, { "text": "…?", "kind": "choice", "choices": ["A","B","C"] } ] }
 Use "choices" ONLY when "kind" is "choice".`;
 
-const PLAN_CHAPTER_SYSTEM_PROMPT = `You are "The Guide" — an in-game advisor in a JRPG-styled life-management app.
-
-The user has a backlog of Epics (long-term goals), Milestones (concrete sub-goals inside an Epic), and Quests (recurring habits). Each item is shown with a short CODE: E# for epics, M# for milestones, Q# for quests.
+const PLAN_CHAPTER_TASK = `The user has a backlog of Epics (long-term goals), Milestones (concrete sub-goals inside an Epic), and Quests (recurring habits). Each item is shown with a short CODE: E# for epics, M# for milestones, Q# for quests.
 
 Your job: lay out a CHAPTER BOARD — an ordered list of chapters that sequences the user's journey. Each chapter is a phase (e.g. "Chapter 1: Foundations", "Chapter 2: Push"). Within a chapter, tier 0 = do first, higher tier = later, same tier = parallel.
 
@@ -1951,7 +1972,7 @@ async function generatePlanQuestions(
   // will surface a real "Ollama down" error if the model is unreachable.
   try {
     const text = await runJsonChatText(
-      PLAN_QUESTION_SYSTEM_PROMPT,
+      systemFor("board", PLAN_QUESTION_TASK),
       `${ctx.backlogText}\n\nAsk ${PLAN_MIN_QUESTIONS}-${PLAN_MAX_QUESTIONS} clarifying questions now. Questions only — no plan yet.`,
       0.5,
     );
@@ -2007,7 +2028,7 @@ ${answers.map((a) => `- Q: ${a.question}\n  A: ${a.answer || "(no answer)"}`).jo
 
   // Transport errors throw; everything else degrades to an empty plan.
   const text = await runJsonChatText(
-    PLAN_CHAPTER_SYSTEM_PROMPT,
+    systemFor("board", PLAN_CHAPTER_TASK),
     `${ctx.backlogText}${answersBlock}
 
 Now return the chapter plan as ONE JSON object (the shape above). Use ONLY the E#/M#/Q# codes from the backlog. Spread a big epic's milestones across chapters to show progression.`,
@@ -2161,8 +2182,10 @@ export async function suggestSkillLinks(
   const messages: Message[] = [
     {
       role: "system",
-      content:
-        'You are "The Guide" in a JRPG life-management app. The user has a set of SKILLS. Propose a progression: which skills are foundational and which build on them. Use the link_skill tool — call it once per edge, where `skill` is the more advanced skill and `requires` is its prerequisite. Only use EXACT names from the list. Never invent skills. Link skills within the same domain where it makes sense; keep it sensible and acyclic. A handful of strong links beats many weak ones.',
+      content: systemFor(
+        "skills",
+        "The user has a set of SKILLS. Propose a progression: which skills are foundational and which build on them. Use the link_skill tool — call it once per edge, where `skill` is the more advanced skill and `requires` is its prerequisite. Only use EXACT names from the list. Never invent skills. Link skills within the same domain where it makes sense; keep it sensible and acyclic. A handful of strong links beats many weak ones.",
+      ),
     },
     {
       role: "user",
@@ -2294,7 +2317,9 @@ export async function suggestSkillsForMilestones(
     return `- ${code} (epic "${m.epic.title}"): "${m.title}"${m.description ? ` — ${m.description}` : ""}${stepText}${linkedText}`;
   });
 
-  const system = `You are "The Guide" in a JRPG life-management app. SKILLS are competencies the user levels up; completing a milestone grants XP to the skills linked to it.
+  const system = systemFor(
+    "skills",
+    `SKILLS are competencies the user levels up; completing a milestone grants XP to the skills linked to it.
 
 Given some milestones and their steps, propose a SMALL set of concrete, REUSABLE skills that completing them would build. Group several milestones under ONE skill when they train the same competency — prefer a few broad skills over many narrow ones. If an EXISTING skill already covers the work, reuse its exact name (so we link instead of duplicating).
 
@@ -2305,7 +2330,8 @@ Rules:
   - 1-6 skills total. Each skill must link to at least one of the milestone codes shown.
   - "milestones" MUST use the exact M# codes from the prompt — never invent codes.
   - Names are short, reusable competencies (e.g. "Dutch", "Endurance", "Spring Boot") — NOT milestone titles or sentences.
-  - "domain" is a short one-word grouping (Tech, Language, Body, Mind, Finance, Trade, Creative, …).`;
+  - "domain" is a short one-word grouping (Tech, Language, Body, Mind, Finance, Trade, Creative, …).`,
+  );
 
   const user = `EXISTING SKILLS (reuse a name verbatim if it already fits): ${
     existingSkills.length ? existingSkills.map((s) => s.name).join(", ") : "(none yet)"

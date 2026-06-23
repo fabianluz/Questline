@@ -81,6 +81,9 @@ export const userPreference = pgTable("user_preference", {
   // When true, surfaces without an explicit override are auto-routed to the
   // best installed model for that task (see lib/model-routing autoPickForSurface).
   autoRouteModels: boolean("auto_route_models").notNull().default(false),
+  // Free-text "house style" appended to every AI surface's persona (tone,
+  // language, length). Null → just the default per-surface persona.
+  houseStyle: text("house_style"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

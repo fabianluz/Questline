@@ -49,6 +49,23 @@ export default function OllamaHelpPage() {
         </p>
       </header>
 
+      <div className="rounded-lg border border-jrpg-gold/50 bg-jrpg-gold/5 p-4 text-sm text-zinc-700 dark:text-zinc-300">
+        <p className="flex items-center gap-2 font-medium text-jrpg-gold">
+          <Cpu className="h-4 w-4" /> Using the desktop app? You can skip all of this.
+        </p>
+        <p className="mt-1.5">
+          Questline manages a local engine for you. Open{" "}
+          <Link href="/models" className="underline">
+            Model Manager
+          </Link>{" "}
+          → <strong>Local AI engine</strong>: if no engine is found, click{" "}
+          <strong>Download AI engine</strong> once (~tens of MB) and the app
+          downloads, runs, and restarts itself wired up. If you already run your
+          own Ollama, Questline attaches to it automatically. The manual steps
+          below are for the web / dev setup, or if you prefer your own install.
+        </p>
+      </div>
+
       <Section title="1. Install Ollama" icon={<Terminal />}>
         <p className="text-sm text-zinc-700 dark:text-zinc-300">
           On macOS, the easiest path is Homebrew:
