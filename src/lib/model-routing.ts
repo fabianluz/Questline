@@ -8,7 +8,7 @@
  * engine truth (installed models + RAM fit) and applies the resolution order.
  */
 
-import type { ModelTier } from "./model-catalog";
+import type { ModelTier, FitVerdict } from "./model-catalog";
 
 /** The AI features a user can pin a model to (or leave on Auto/default). */
 export const MODEL_SURFACES = [
@@ -99,6 +99,8 @@ export interface RoutingCandidate {
   tools: boolean;
   /** Loads within the RAM budget (fitFor !== "over"). */
   fits: boolean;
+  /** Graded RAM fit — used to prefer a comfortable model over a tight one. */
+  fit?: FitVerdict;
 }
 
 /**
@@ -127,10 +129,15 @@ export function autoPickForSurface(
     const i = t ? meta.prefTiers.indexOf(t) : -1;
     return i === -1 ? meta.prefTiers.length : i; // unknown tier sorts last
   };
+  // Comfortable beats tight beats unknown when the tier preference ties.
+  const fitRank = (f?: FitVerdict) =>
+    f === "ok" ? 0 : f === "tight" ? 1 : 2;
 
   pool.sort((a, b) => {
     const r = tierRank(a.tier) - tierRank(b.tier);
-    return r !== 0 ? r : a.ref.localeCompare(b.ref);
+    if (r !== 0) return r;
+    const fr = fitRank(a.fit) - fitRank(b.fit);
+    return fr !== 0 ? fr : a.ref.localeCompare(b.ref);
   });
 
   return pool[0]?.ref ?? null;

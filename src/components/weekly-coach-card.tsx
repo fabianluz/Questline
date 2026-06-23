@@ -3,6 +3,8 @@
 import { Compass, Sparkles, Target, TriangleAlert } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useToast } from "@/components/toast";
+import { RichText } from "@/components/rich-text";
+import { ListenButton } from "@/components/listen-button";
 
 /**
  * Weekly Coach — an on-demand local briefing. Runs the warm Ollama model over
@@ -27,18 +29,27 @@ export function WeeklyCoachCard() {
           </h2>
           <span className="text-[11px] text-trails-fg-dim">· local AI briefing</span>
         </div>
-        <button
-          onClick={() => coach.mutate()}
-          disabled={coach.isPending}
-          className="inline-flex items-center gap-1.5 rounded-md border border-trails-accent/60 bg-trails-accent/10 px-3 py-1.5 font-display text-xs uppercase tracking-widest text-trails-accent hover:bg-trails-accent/20 disabled:opacity-50"
-        >
-          <Sparkles className="h-3 w-3" aria-hidden />
-          {coach.isPending
-            ? "Consulting…"
-            : data
-              ? "Refresh briefing"
-              : "Brief me on this week"}
-        </button>
+        <div className="flex items-center gap-2">
+          {data && (
+            <ListenButton
+              text={[data.priorities, data.risks, data.encouragement]
+                .filter(Boolean)
+                .join(". ")}
+            />
+          )}
+          <button
+            onClick={() => coach.mutate()}
+            disabled={coach.isPending}
+            className="inline-flex items-center gap-1.5 rounded-md border border-trails-accent/60 bg-trails-accent/10 px-3 py-1.5 font-display text-xs uppercase tracking-widest text-trails-accent hover:bg-trails-accent/20 disabled:opacity-50"
+          >
+            <Sparkles className="h-3 w-3" aria-hidden />
+            {coach.isPending
+              ? "Consulting…"
+              : data
+                ? "Refresh briefing"
+                : "Brief me on this week"}
+          </button>
+        </div>
       </div>
 
       {!data && !coach.isPending && (
@@ -71,9 +82,9 @@ export function WeeklyCoachCard() {
             />
           )}
           {data.encouragement && (
-            <p className="border-l-2 border-jrpg-gold/60 pl-3 text-sm italic text-trails-fg">
-              {data.encouragement}
-            </p>
+            <div className="border-l-2 border-jrpg-gold/60 pl-3 text-sm italic text-trails-fg">
+              <RichText text={data.encouragement} />
+            </div>
           )}
           <p className="text-[10px] text-trails-fg-dim">
             {data.model} · {new Date(data.generatedAt).toLocaleString()}
@@ -93,27 +104,15 @@ function CoachSection({
   title: string;
   body: string;
 }) {
-  // Render "- " bullet lines as a list. Defensively strip any residual markdown
-  // (bold/italic markers) and leading bullet glyphs, and drop marker-only lines
-  // so a model that emits "* " or "**bold**" never shows raw syntax.
-  const lines = body
-    .split("\n")
-    .map((l) => l.replace(/\*\*/g, "").replace(/^[-*•]\s*/, "").trim())
-    .filter((l) => l && /[a-z0-9]/i.test(l));
+  // RichText handles bullets, **bold**/_italic_, `code`, and LaTeX `$math$` /
+  // `$$block$$`, so the model's formatting (and any formulas) render cleanly.
   return (
     <div>
       <div className="mb-1 flex items-center gap-1.5 font-display text-[11px] uppercase tracking-widest text-trails-fg-dim">
         {icon}
         {title}
       </div>
-      <ul className="space-y-1 text-sm text-trails-fg">
-        {lines.map((l, i) => (
-          <li key={i} className="flex gap-1.5">
-            <span className="text-trails-accent">•</span>
-            <span>{l.replace(/^[-*]\s*/, "")}</span>
-          </li>
-        ))}
-      </ul>
+      <RichText text={body} className="text-sm text-trails-fg" />
     </div>
   );
 }

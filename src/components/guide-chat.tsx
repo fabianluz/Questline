@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Compass, Send, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tokensPerSecond } from "@/lib/model-routing";
+import { RichText } from "@/components/rich-text";
+import { DictateButton } from "@/components/dictate-button";
 
 /** Open the Guide chat from anywhere. */
 export function openGuideChat() {
@@ -16,7 +18,7 @@ const QUICK = [
   "What should I focus on this week?",
   "Am I behind on anything?",
   "Plan my next 3 days.",
-  "What's the fastest way to clear my debt?",
+  "Draw my roadmap as a flowchart diagram.",
 ];
 
 /**
@@ -180,9 +182,15 @@ export function GuideChat() {
                     : "mr-auto bg-trails-panel-dark/70 text-trails-fg",
                 )}
               >
-                <p className="whitespace-pre-wrap">
-                  {m.content || (streaming && i === messages.length - 1 ? "…" : "")}
-                </p>
+                {m.role === "assistant" ? (
+                  m.content ? (
+                    <RichText text={m.content} />
+                  ) : (
+                    <p>{streaming && i === messages.length - 1 ? "…" : ""}</p>
+                  )
+                ) : (
+                  <p className="whitespace-pre-wrap">{m.content}</p>
+                )}
               </div>
             ))
           )}
@@ -202,6 +210,9 @@ export function GuideChat() {
             placeholder={streaming ? "The Guide is thinking…" : "Ask the Guide…"}
             disabled={streaming}
             className="min-w-0 flex-1 rounded-md border border-trails-trim/50 bg-trails-panel-dark px-3 py-2 text-sm text-trails-fg focus:outline-none focus:ring-1 focus:ring-trails-accent/50 disabled:opacity-60"
+          />
+          <DictateButton
+            onText={(t) => setInput((prev) => (prev ? `${prev} ${t}` : t))}
           />
           <button
             type="submit"

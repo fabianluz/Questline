@@ -31,4 +31,22 @@ contextBridge.exposeInMainWorld("questline", {
     ipcRenderer.on("questline:ollama-progress", handler);
     return () => ipcRenderer.removeListener("questline:ollama-progress", handler);
   },
+
+  // Voice (Phase 6) — text-to-speech via macOS `say`. Offline, no bundling.
+  // On the web build there's no bridge → callers fall back to the Web Speech API.
+  speak: (text, opts) =>
+    ipcRenderer.invoke("questline:speak", { text, ...(opts ?? {}) }),
+  stopSpeaking: () => ipcRenderer.invoke("questline:stop-speaking"),
+
+  // Voice (Phase 6) — local speech-to-text via whisper.cpp. `transcribe` takes
+  // 16 kHz mono WAV bytes (Uint8Array) and returns the recognized text.
+  whisperStatus: () => ipcRenderer.invoke("questline:whisper-status"),
+  whisperInstallModel: () => ipcRenderer.invoke("questline:whisper-install-model"),
+  transcribe: (wav, lang) => ipcRenderer.invoke("questline:transcribe", { wav, lang }),
+  /** Subscribe to model-download progress; returns an unsubscribe fn. */
+  onWhisperProgress: (cb) => {
+    const handler = (_e, p) => cb(p);
+    ipcRenderer.on("questline:whisper-progress", handler);
+    return () => ipcRenderer.removeListener("questline:whisper-progress", handler);
+  },
 });

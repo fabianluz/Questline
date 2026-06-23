@@ -9,6 +9,7 @@ import {
   listInstalledModels,
   runWithModel,
 } from "@/lib/ollama";
+import { runWithAiContext } from "@/server/ai-context";
 import { catalogByRef, fitFor, normalizeRef } from "@/lib/model-catalog";
 import {
   autoPickForSurface,
@@ -21,6 +22,8 @@ interface RoutingContext {
   installed: string[]; // normalized refs ([] if engine unreachable)
   verifiable: boolean;
   pref: { surfaceModels: Record<string, string> | null; autoRouteModels: boolean } | null;
+  /** Free-text persona override appended to every surface's system prompt. */
+  houseStyle: string | null;
 }
 
 async function loadContext(userId: string): Promise<RoutingContext> {
@@ -28,7 +31,7 @@ async function loadContext(userId: string): Promise<RoutingContext> {
     listInstalledModels(),
     db.query.userPreference.findFirst({
       where: eq(userPreference.userId, userId),
-      columns: { surfaceModels: true, autoRouteModels: true },
+      columns: { surfaceModels: true, autoRouteModels: true, houseStyle: true },
     }),
   ]);
   return {
@@ -37,6 +40,7 @@ async function loadContext(userId: string): Promise<RoutingContext> {
     pref: pref
       ? { surfaceModels: pref.surfaceModels ?? null, autoRouteModels: pref.autoRouteModels }
       : null,
+    houseStyle: pref?.houseStyle ?? null,
   };
 }
 
@@ -62,11 +66,13 @@ function pickForSurface(
     const total = os.totalmem();
     const candidates: RoutingCandidate[] = ctx.installed.map((ref) => {
       const c = catalogByRef(ref);
+      const fit = fitFor(c?.approxBytes, total);
       return {
         ref,
         tier: c?.tier,
         tools: c?.capabilities?.tools ?? false,
-        fits: fitFor(c?.approxBytes, total) !== "over",
+        fits: fit !== "over",
+        fit,
       };
     });
     const pick = autoPickForSurface(surface, candidates);
@@ -118,6 +124,11 @@ export async function runForSurface<T>(
   fn: () => Promise<T>,
   requested?: string | null,
 ): Promise<T> {
-  const model = await resolveModelForUser(userId, surface, requested);
-  return runWithModel(model, fn);
+  const ctx = await loadContext(userId);
+  const model = pickForSurface(ctx, surface, requested);
+  // Bind both the resolved model AND the AI context (surface + house style) for
+  // the call's async scope, so advisor.ts reads them without signature changes.
+  return runWithModel(model, () =>
+    runWithAiContext({ surface, houseStyle: ctx.houseStyle }, fn),
+  );
 }

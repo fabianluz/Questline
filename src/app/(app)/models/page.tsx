@@ -8,7 +8,6 @@ import {
   Download,
   HardDrive,
   Loader2,
-  Power,
   RefreshCw,
   Square,
   Star,
@@ -20,25 +19,19 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/toast";
 import { SurfaceRoutingCard } from "@/components/surface-routing-card";
+import { HouseStyleCard } from "@/components/house-style-card";
+import { EngineCard } from "@/components/engine-card";
+import {
+  estimateTokensPerSec,
+  speedLabel,
+  isLowQuant,
+  quantQuality,
+  type SpeedTier,
+} from "@/lib/hw-perf";
 
 type FitVerdict = "ok" | "tight" | "over" | "unknown";
 type ModelRowModel =
   inferRouterOutputs<AppRouter>["models"]["list"]["models"][number];
-
-/** Desktop-only bridge exposed by electron/preload.js (absent on the web). */
-type OllamaBridge = {
-  ollamaStatus: () => Promise<{ state: string; version: string | null }>;
-  ollamaStart: () => Promise<unknown>;
-  ollamaInstall: () => Promise<unknown>;
-  onOllamaProgress: (
-    cb: (p: { downloaded: number; total: number | null }) => void,
-  ) => () => void;
-};
-function bridge(): OllamaBridge | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { questline?: Partial<OllamaBridge> };
-  return w.questline?.ollamaStart ? (w.questline as OllamaBridge) : null;
-}
 
 function fmtBytes(n: number | undefined): string {
   if (!n) return "—";
@@ -57,6 +50,11 @@ const FIT_CLASS: Record<FitVerdict, string> = {
   tight: "border-trails-warn/50 text-trails-warn",
   over: "border-trails-bad/50 text-trails-bad",
   unknown: "border-trails-trim/40 text-trails-fg-dim",
+};
+const SPEED_CLASS: Record<SpeedTier, string> = {
+  fast: "text-trails-good",
+  ok: "text-trails-fg-dim",
+  slow: "text-trails-warn",
 };
 
 export default function ModelsPage() {
@@ -215,6 +213,9 @@ export default function ModelsPage() {
         )}
       </section>
 
+      {/* Local AI engine status + controls (desktop self-managed Ollama) */}
+      <EngineCard onChanged={() => refetch()} />
+
       {/* First-run: recommend a RAM-appropriate model + one-click pull */}
       {installed.length === 0 && recommended && (
         <section className="rounded-lg border border-jrpg-gold/50 bg-jrpg-gold/5 p-4">
@@ -259,6 +260,9 @@ export default function ModelsPage() {
       {/* Per-feature model routing + Auto */}
       <SurfaceRoutingCard />
 
+      {/* Free-text persona override applied to every AI surface */}
+      <HouseStyleCard />
+
       {!data?.reachable && data && (
         <div className="space-y-3 rounded-md border border-trails-bad/60 bg-trails-bad/10 p-3 text-xs text-trails-bad">
           <p className="flex items-start gap-2">
@@ -269,7 +273,6 @@ export default function ModelsPage() {
               Refresh.{data.error ? ` (${data.error})` : ""}
             </span>
           </p>
-          <EngineControls onChanged={() => refetch()} />
         </div>
       )}
 
@@ -298,9 +301,21 @@ export default function ModelsPage() {
                   <ModelRow
                     key={m.ref}
                     m={m}
+                    chip={data?.chip ?? null}
                     active={!!activeRef && m.selected}
                     busy={busyRef === m.ref || (setSelected.isPending && setSelected.variables?.model === m.ref)}
-                    onUse={() => setSelected.mutate({ model: m.ref })}
+                    onUse={() => {
+                      // Guard the exact mistake that prompted this: picking a
+                      // model that won't fit RAM (swaps / lingers / runs slow).
+                      if (
+                        m.fit === "over" &&
+                        !confirm(
+                          `"${m.ref}" likely exceeds your RAM and may swap, run slowly, or fail to load. Use it anyway?`,
+                        )
+                      )
+                        return;
+                      setSelected.mutate({ model: m.ref });
+                    }}
                     onDelete={() => {
                       if (confirm(`Delete "${m.ref}" from disk? You can re-pull it later.`)) {
                         setBusyRef(m.ref);
@@ -324,6 +339,7 @@ export default function ModelsPage() {
                   <ModelRow
                     key={m.ref}
                     m={m}
+                    chip={data?.chip ?? null}
                     active={false}
                     pulling={pullingRef === m.ref}
                     pull={pullingRef === m.ref ? pull : null}
@@ -341,79 +357,9 @@ export default function ModelsPage() {
   );
 }
 
-/**
- * Desktop-only engine controls: start an installed Ollama, or download the
- * standalone engine in-app. Renders nothing on the web (no bridge). After
- * either action the app relaunches to wire the engine to the server.
- */
-function EngineControls({ onChanged }: { onChanged: () => void }) {
-  const b = bridge();
-  const [state, setState] = useState<string | null>(null);
-  const [busy, setBusy] = useState<"start" | "install" | null>(null);
-  const [prog, setProg] = useState<{ downloaded: number; total: number | null } | null>(null);
-
-  useEffect(() => {
-    if (!b) return;
-    b.ollamaStatus().then((s) => setState(s.state)).catch(() => setState(null));
-    const off = b.onOllamaProgress((p) => setProg(p));
-    return off;
-  }, [b]);
-
-  if (!b) return null;
-
-  const pct =
-    prog?.total && prog.downloaded ? Math.round((prog.downloaded / prog.total) * 100) : null;
-
-  return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-trails-bad/30 pt-2">
-      <button
-        onClick={async () => {
-          setBusy("start");
-          try {
-            await b.ollamaStart();
-            onChanged();
-          } finally {
-            setBusy(null);
-          }
-        }}
-        disabled={busy !== null}
-        className="inline-flex items-center gap-1.5 rounded-md border border-trails-accent/60 bg-trails-accent/10 px-2.5 py-1 font-display text-[10px] uppercase tracking-widest text-trails-accent hover:bg-trails-accent/20 disabled:opacity-50"
-      >
-        {busy === "start" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Power className="h-3 w-3" />}
-        Start engine
-      </button>
-
-      {state === "needs-install" && (
-        <button
-          onClick={async () => {
-            setBusy("install");
-            try {
-              await b.ollamaInstall();
-            } finally {
-              setBusy(null);
-            }
-          }}
-          disabled={busy !== null}
-          className="inline-flex items-center gap-1.5 rounded-md border border-jrpg-gold/60 bg-jrpg-gold/10 px-2.5 py-1 font-display text-[10px] uppercase tracking-widest text-jrpg-gold hover:bg-jrpg-gold/20 disabled:opacity-50"
-        >
-          {busy === "install" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-          {busy === "install"
-            ? pct !== null
-              ? `Downloading… ${pct}%`
-              : "Downloading…"
-            : "Download AI engine"}
-        </button>
-      )}
-
-      <span className="text-[10px] text-trails-fg-dim">
-        The app restarts once the engine is ready.
-      </span>
-    </div>
-  );
-}
-
 function ModelRow({
   m,
+  chip,
   active,
   busy,
   pulling,
@@ -425,6 +371,7 @@ function ModelRow({
   onCancel,
 }: {
   m: ModelRowModel;
+  chip?: string | null;
   active: boolean;
   busy?: boolean;
   pulling?: boolean;
@@ -437,6 +384,10 @@ function ModelRow({
 }) {
   const pct =
     pull?.completed && pull?.total ? Math.round((pull.completed / pull.total) * 100) : null;
+  // Pre-run estimates (Arcadia-ported hw-perf): rough decode speed on this Mac
+  // + a low-quant reliability warning. Both degrade gracefully to nothing.
+  const speed = speedLabel(estimateTokensPerSec(m.sizeBytes ?? m.approxBytes, chip));
+  const lowQuant = isLowQuant(m.quant);
 
   return (
     <li
@@ -472,7 +423,28 @@ function ModelRow({
             {FIT_LABEL[m.fit]}
           </span>
         )}
-        <span className="ml-auto inline-flex items-center gap-1 font-mono text-[11px] text-trails-fg-dim">
+        {lowQuant && (
+          <span
+            title={quantQuality(m.quant) ?? undefined}
+            className="inline-flex items-center gap-0.5 rounded-sm border border-trails-warn/50 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-trails-warn"
+          >
+            <AlertTriangle className="h-2.5 w-2.5" /> low-quant
+          </span>
+        )}
+        {speed && (
+          <span
+            title="Estimated decode speed for your chip — bigger models run slower"
+            className={cn("ml-auto font-mono text-[10px]", SPEED_CLASS[speed.tier])}
+          >
+            {speed.text}
+          </span>
+        )}
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 font-mono text-[11px] text-trails-fg-dim",
+            !speed && "ml-auto",
+          )}
+        >
           <HardDrive className="h-3 w-3" />
           {fmtBytes(m.sizeBytes ?? m.approxBytes)}
           {!m.sizeBytes && m.approxBytes ? " (est)" : ""}
